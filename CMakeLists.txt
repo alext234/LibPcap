@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(cppobserver)
+project(LibPcap)
 
 add_subdirectory(googletest)
+
+
+add_library (cpppcap cpppcap.h cpppcap.cpp)
+
+
+
 
 set(GOOGLETEST ${CMAKE_SOURCE_DIR}/googletest/)  
 include_directories(${GOOGLETEST}/googlemock/include ${GOOGLETEST}/googletest/include)
@@ -15,5 +21,6 @@ add_executable(runtests  tests.cpp)
 target_link_libraries(runtests gmock)
 target_link_libraries(runtests gtest)
 target_link_libraries(runtests pthread)
+target_link_libraries(runtests cpppcap)
 
 add_subdirectory(examples)
