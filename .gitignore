@@ -28,3 +28,7 @@ build
 *.exe
 *.out
 *.app
+
+
+# vim swap files
+*.swp
