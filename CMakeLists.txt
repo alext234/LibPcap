@@ -5,10 +5,15 @@ project(LibPcap)
 add_subdirectory(googletest)
 
 
-add_library (cpppcap cpppcap.h cpppcap.cpp)
+set(LIBPCAP ${CMAKE_SOURCE_DIR}/libpcap)  
+set(LIBPCAP_STATIC ${CMAKE_SOURCE_DIR}/libpcap/libpcap.a)  
+add_custom_command(
+    OUTPUT  ${LIBPCAP_STATIC}
+    COMMAND cwd=$(pwd) && cd ${LIBPCAP} && pwd && ./configure && make && cd ${cwd}
+)
 
 
-
+add_library (cpppcap cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
 
 set(GOOGLETEST ${CMAKE_SOURCE_DIR}/googletest/)  
 include_directories(${GOOGLETEST}/googlemock/include ${GOOGLETEST}/googletest/include)
