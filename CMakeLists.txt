@@ -13,7 +13,7 @@ add_custom_command(
 )
 
 
-add_library (cpppcap cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
+add_library (cpppcap STATIC cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
 
 set(GOOGLETEST ${CMAKE_SOURCE_DIR}/googletest/)  
 include_directories(${GOOGLETEST}/googlemock/include ${GOOGLETEST}/googletest/include)
@@ -27,5 +27,6 @@ target_link_libraries(runtests gmock)
 target_link_libraries(runtests gtest)
 target_link_libraries(runtests pthread)
 target_link_libraries(runtests cpppcap)
+target_link_libraries(runtests ${LIBPCAP_STATIC})
 
 add_subdirectory(examples)
