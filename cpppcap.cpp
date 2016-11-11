@@ -11,7 +11,14 @@ namespace Pcap {
         if (pcap_findalldevs(&alldevs, errbuf) == -1){
             throw Error(std::string(errbuf));
         }
-        // TODO: populate devList
+        // populate devList
+        pcap_if_t *dev_it;
+        for(dev_it=alldevs;dev_it;dev_it=dev_it->next){
+            devList.emplace_back (  std::string{dev_it->name},
+                                    (dev_it->description)?std::string{dev_it->description}:""
+                                 );
+        }
+
 
     
         ////
@@ -19,4 +26,8 @@ namespace Pcap {
         return devList;
     }
 
+    std::ostream& operator<<(std::ostream& os, const Dev& dev) {
+        os << "name: "<< dev._name << "   " << "description: " << dev._description;
+        return os;
+    }
 } // namespace Pcap 
