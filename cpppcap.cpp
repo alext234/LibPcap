@@ -2,11 +2,6 @@
 #include "pcap.h"
 
 namespace Pcap {
-    class Wrapper_pcap_if_t {
-    public:
-        Wrapper_pcap_if_t(pcap_if_t* if_ptr): pcap_if_ptr{if_ptr} {}
-        pcap_if_t* pcap_if_ptr;
-    };
 
     std::vector<Dev> findAllDevs(void) throw (Error) {
         std::vector<Dev> devList;
@@ -20,13 +15,14 @@ namespace Pcap {
         // populate devList
         pcap_if_t *dev_it;
         for(dev_it=alldevs;dev_it;dev_it=dev_it->next){
-            Wrapper_pcap_if_t pcap_if{dev_it};
-            devList.push_back (Dev{pcap_if});
+
+            Dev dev{dev_it->name?std::string(dev_it->name):"", 
+            dev_it->description?std::string(dev_it->description):""};
+            dev._flags = dev_it->flags;
+
+            devList.push_back (std::move(dev));
         }
 
-
-    
-        ////
 
         return devList;
     }
@@ -42,14 +38,14 @@ namespace Pcap {
         ;
         return os;
     }
-
     
-    Dev::Dev(Wrapper_pcap_if_t pcap_if) :
-    _name{pcap_if.pcap_if_ptr->name},
-    _description{(pcap_if.pcap_if_ptr->description)?pcap_if.pcap_if_ptr->description:"" },
-    _flags{pcap_if.pcap_if_ptr->flags}
-    {      }
-
+    Dev::Dev(Dev&& r) {
+        _name = std::move(r._name);
+        _description = std::move(r._description);
+        _flags = r._flags;
+    }
+    
+    
     bool Dev::isUp() const{ 
         return _flags & PCAP_IF_UP;
     }
