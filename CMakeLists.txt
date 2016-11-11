@@ -9,13 +9,14 @@ set(LIBPCAP ${CMAKE_SOURCE_DIR}/libpcap)
 set(LIBPCAP_STATIC ${CMAKE_SOURCE_DIR}/libpcap/libpcap.a)  
 add_custom_command(
     OUTPUT  ${LIBPCAP_STATIC}
-    COMMAND cwd=$(pwd) && cd ${LIBPCAP} && pwd && ./configure && make && cd ${cwd}
+    COMMAND cwd=$(pwd) && cd ${LIBPCAP} && pwd && ./configure --enable-dbus=no --enable-bluetooth=no --enable-usb=no && make && cd ${cwd}
 )
 
 
 add_library (cpppcap STATIC cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
 
 set(GOOGLETEST ${CMAKE_SOURCE_DIR}/googletest/)  
+include_directories(${LIBPCAP})
 include_directories(${GOOGLETEST}/googlemock/include ${GOOGLETEST}/googletest/include)
 link_directories(${GOOGLETEST}/build/googlemock ${GOOGLETEST}/build/googlemock/gtest)
 
