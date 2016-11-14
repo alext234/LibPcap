@@ -23,6 +23,7 @@ namespace Pcap {
             devList.push_back (std::move(dev));
         }
 
+        pcap_freealldevs(alldevs);
 
         return devList;
     }
