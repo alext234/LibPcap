@@ -3,8 +3,8 @@
 
 namespace Pcap {
 
-    std::vector<Dev> findAllDevs(void) throw (Error) {
-        std::vector<Dev> devList;
+    std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw (Error) {
+        std::vector< std::shared_ptr<Dev> > devList;
         
         // C code
         char errbuf[PCAP_ERRBUF_SIZE+1];
@@ -20,12 +20,28 @@ namespace Pcap {
             dev_it->description?std::string(dev_it->description):""};
             dev._flags = dev_it->flags;
 
-            devList.push_back (std::move(dev));
+            devList.push_back (std::make_shared<Dev> (std::move(dev)));
         }
 
         pcap_freealldevs(alldevs);
 
         return devList;
+    }
+
+    std::shared_ptr<Dev> lookUpDev(void) throw(Error) {
+        // based on reference implementation from original libpcap
+        auto devList = findAllDevs();
+        if (devList.size()==0) {
+            return nullptr;
+        }
+        auto first = *(devList.cbegin());
+        if (first->isLoopback()) {
+            return nullptr;
+        }
+
+        return  first;
+
+        
     }
 
     std::ostream& operator<<(std::ostream& os, const Dev& dev) {

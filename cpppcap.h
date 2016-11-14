@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <ostream>
 #include <iostream>
-
+#include <memory> 
 namespace Pcap {
 
     class Error : public std::runtime_error {       
@@ -31,11 +31,12 @@ namespace Pcap {
         uint32_t _flags;        
 
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);
-        friend std::vector<Dev> findAllDevs(void) throw(Error);
+        friend std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
     };
-    
-    
-    std::vector<Dev> findAllDevs(void) throw(Error);
+   
+    // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
+    std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
+    std::shared_ptr<Dev> lookUpDev(void) throw(Error);
 
 }
 #endif //__LIB_CPPPCAP__
