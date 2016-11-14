@@ -2,8 +2,9 @@
 #include "pcap.h"
 
 namespace Pcap {
-    std::vector<Dev> findAllDevs(void) throw (Error) {
-        std::vector<Dev> devList;
+
+    std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw (Error) {
+        std::vector< std::shared_ptr<Dev> > devList;
         
         // C code
         char errbuf[PCAP_ERRBUF_SIZE+1];
@@ -14,20 +15,63 @@ namespace Pcap {
         // populate devList
         pcap_if_t *dev_it;
         for(dev_it=alldevs;dev_it;dev_it=dev_it->next){
-            devList.emplace_back (  std::string{dev_it->name},
-                                    (dev_it->description)?std::string{dev_it->description}:""
-                                 );
+
+            Dev dev{dev_it->name?std::string(dev_it->name):"", 
+            dev_it->description?std::string(dev_it->description):""};
+            dev._flags = dev_it->flags;
+
+            devList.push_back (std::make_shared<Dev> (std::move(dev)));
         }
 
-
-    
-        ////
+        pcap_freealldevs(alldevs);
 
         return devList;
     }
 
+    std::shared_ptr<Dev> lookUpDev(void) throw(Error) {
+        // based on reference implementation from original libpcap
+        auto devList = findAllDevs();
+        if (devList.size()==0) {
+            return nullptr;
+        }
+        auto first = *(devList.cbegin());
+        if (first->isLoopback()) {
+            return nullptr;
+        }
+
+        return  first;
+
+        
+    }
+
     std::ostream& operator<<(std::ostream& os, const Dev& dev) {
-        os << "name: "<< dev._name << "   " << "description: " << dev._description;
+        os << "name: "<< dev._name 
+        << "\n  " << "description: " << dev._description
+        << "\n  " << "flags: "
+        << (dev.isUp()?" UP " :" ")
+        << (dev.isRunning()?" RUNNING " :" ")
+        << (dev.isLoopback()?" LOOPBACK " :" ")
+        
+        ;
         return os;
+    }
+    
+    Dev::Dev(Dev&& r) {
+        _name = std::move(r._name);
+        _description = std::move(r._description);
+        _flags = r._flags;
+    }
+    
+    
+    bool Dev::isUp() const{ 
+        return _flags & PCAP_IF_UP;
+    }
+
+    bool Dev::isRunning() const{
+        return _flags & PCAP_IF_RUNNING;
+    }
+
+    bool Dev::isLoopback() const{
+        return _flags & PCAP_IF_LOOPBACK;
     }
 } // namespace Pcap 
