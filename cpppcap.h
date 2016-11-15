@@ -35,8 +35,13 @@ namespace Pcap {
     };
    
     // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
+    enum tstamp_precision{
+        TSTAMP_PRECISION_MICRO=0,
+        TSTAMP_PRECISION_NANO
+    };
     std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
     std::shared_ptr<Dev> lookUpDev(void) throw(Error);
+    std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
 
 }
 #endif //__LIB_CPPPCAP__

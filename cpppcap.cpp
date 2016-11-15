@@ -74,4 +74,9 @@ namespace Pcap {
     bool Dev::isLoopback() const{
         return _flags & PCAP_IF_LOOPBACK;
     }
+    
+    std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error){
+        // TODO: implement with pcap_open_offline; check for error and throw exception
+       
+    }
 } // namespace Pcap 

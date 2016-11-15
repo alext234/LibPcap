@@ -25,7 +25,8 @@ TEST(CppPcap, openOfflinePcapFile) {
     pcapFile+="/sample_http.pcap";
     
     
-    //auto dev = openOffline(pcapFile);
+    auto dev = openOffline(pcapFile);
+    // TODO: register observer and start loop
 
 }
 
