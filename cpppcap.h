@@ -16,7 +16,8 @@ namespace Pcap {
     
     class Dev {
     public:
-        Dev(const std::string& name, const std::string& description=""):_name{name},_description{description},_flags{0} {}
+        Dev(const std::string& name, const std::string& description="");
+        ~Dev() ;
 
         std::string name() const { return _name;}
         std::string description() const { return _description;}
@@ -29,6 +30,9 @@ namespace Pcap {
         std::string _name;
         std::string _description;
         uint32_t _flags;        
+
+        class CPcapWrapper;
+        std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
 
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);
         friend std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);

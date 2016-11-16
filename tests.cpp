@@ -19,7 +19,7 @@ TEST(CppPcap,  lookUpDev) {
        std::cout<<*dev<< std::endl;  
    }
 }
-#define abc "hello"
+
 TEST(CppPcap, openOfflinePcapFile) {
     std::string pcapFile{SAMPLE_PCAP_DIR};
     pcapFile+="/sample_http.pcap";
