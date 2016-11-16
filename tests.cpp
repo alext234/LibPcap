@@ -3,6 +3,7 @@
 #include <iostream>
 
 using namespace Pcap;
+using namespace testing;
 
 
 // this test case will get from actual system
@@ -18,6 +19,26 @@ TEST(CppPcap,  lookUpDev) {
    if (dev!=nullptr) {
        std::cout<<*dev<< std::endl;  
    }
+}
+
+TEST(CppPcap, openOfflinePcapFileNotExist) {
+    try{
+        auto dev = openOffline("notExistFile.pcap");
+        ASSERT_THAT(true, Eq(false));
+     } catch (const Pcap::Error &err) {
+        
+     }
+
+}
+
+TEST(CppPcap, openOfflinePcapFile) {
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+    // TODO: register observer and start loop
+
 }
 
 int main(int argc, char *argv[])

@@ -26,6 +26,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wno
 
 
 add_executable(runtests  tests.cpp)
+set(SAMPLE_PCAP_DIR ${CMAKE_SOURCE_DIR}/examples/)
+set_target_properties(runtests PROPERTIES COMPILE_FLAGS -D'SAMPLE_PCAP_DIR="${SAMPLE_PCAP_DIR}"')
 target_link_libraries(runtests gmock)
 target_link_libraries(runtests gtest)
 target_link_libraries(runtests pthread)
