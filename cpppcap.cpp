@@ -90,8 +90,10 @@ namespace Pcap {
             _handler = nullptr;
         } 
         ~CPcapWrapper () {
-            // TODO: need to free up memory for handler if necessary
-
+            if (_handler!=nullptr) {
+                pcap_close(_handler);
+                _handler=nullptr;
+            }
         }
         
         pcap_t *_handler;    // used to store returned  handled from pcap_open_* functions
@@ -99,7 +101,17 @@ namespace Pcap {
 
 
     std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error){
-        // TODO: implement with pcap_open_offline; check for error and throw exception
+
+        char errbuf[PCAP_ERRBUF_SIZE+1];
+        pcap_t *handler = pcap_open_offline_with_tstamp_precision(savefile.c_str(), precision, errbuf);
+        if (handler==nullptr) {
+            throw Error(std::string(errbuf));
+        }
+        auto dev = std::make_shared<Dev>(savefile);
+        dev->_cwrapper->_handler = handler;
+
+        return dev;
+
     
        
     }

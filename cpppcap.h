@@ -14,6 +14,10 @@ namespace Pcap {
         Error (const std::string& what_arg): std::runtime_error{what_arg} {}
     };
     
+    enum tstamp_precision{
+        TSTAMP_PRECISION_MICRO=0,
+        TSTAMP_PRECISION_NANO
+    };
     class Dev {
     public:
         Dev(const std::string& name, const std::string& description="");
@@ -34,15 +38,13 @@ namespace Pcap {
         class CPcapWrapper;
         std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
 
+        // 'friends'
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);
         friend std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
+        friend std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error);
     };
    
     // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
-    enum tstamp_precision{
-        TSTAMP_PRECISION_MICRO=0,
-        TSTAMP_PRECISION_NANO
-    };
     std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
     std::shared_ptr<Dev> lookUpDev(void) throw(Error);
     std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
