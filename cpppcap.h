@@ -35,6 +35,9 @@ namespace Pcap {
         bool isLoopback()const ;
         Dev(const Dev&)=default;
         Dev(Dev&& r);
+
+
+        void loop(void); // start the receive loop
     private:
         std::string _name;
         std::string _description;

@@ -35,9 +35,12 @@ TEST(CppPcap, openOfflinePcapFileNotExist) {
 TEST(CppPcap, openOfflinePcapFile) {
 
 
-    class PacketObserver: public AbstractObserver<Packet> {
-    	void onNotified(const Packet& packet) override {
+    struct PacketObserver: public AbstractObserver<Packet> {
+        void onNotified(const Packet& packet) override {
+            receivedCount +=1;
         }
+
+        int receivedCount=0;
 
     };
 
@@ -50,8 +53,8 @@ TEST(CppPcap, openOfflinePcapFile) {
     auto observer = std::make_shared<PacketObserver>();
     dev->registerObserver(observer);
 
-    // TODO: start loop
-
+    dev->loop();
+    ASSERT_THAT (observer->receivedCount, Gt(0));
 
 }
 

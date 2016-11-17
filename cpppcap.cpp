@@ -84,6 +84,11 @@ namespace Pcap {
     Dev::~Dev() {  
     }
 
+    void Dev::loop(void) {
+
+        // TODO: use pcap_loop
+    }
+
     class Dev::CPcapWrapper {
     public:
         CPcapWrapper() {
@@ -115,4 +120,6 @@ namespace Pcap {
     
        
     }
+
+
 } // namespace Pcap 
