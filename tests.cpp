@@ -1,6 +1,7 @@
 #include "gmock/gmock.h"
 #include "cpppcap.h"
 #include <iostream>
+#include "cpp_observer.h"
 
 using namespace Pcap;
 using namespace testing;
@@ -32,12 +33,25 @@ TEST(CppPcap, openOfflinePcapFileNotExist) {
 }
 
 TEST(CppPcap, openOfflinePcapFile) {
+
+
+    class PacketObserver: public AbstractObserver<Packet> {
+    	void onNotified(const Packet& packet) override {
+        }
+
+    };
+
     std::string pcapFile{SAMPLE_PCAP_DIR};
     pcapFile+="sample_http.cap";
     
     
     auto dev = openOffline(pcapFile);
-    // TODO: register observer and start loop
+    // register observer 
+    auto observer = std::make_shared<PacketObserver>();
+    dev->registerObserver(observer);
+
+    // TODO: start loop
+
 
 }
 

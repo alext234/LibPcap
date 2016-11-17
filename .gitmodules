@@ -4,3 +4,6 @@
 [submodule "libpcap"]
 	path = libpcap
 	url = https://github.com/the-tcpdump-group/libpcap.git
+[submodule "cppobserver"]
+	path = cppobserver
+	url = https://github.com/alext234/cppobserver.git

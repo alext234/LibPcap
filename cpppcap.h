@@ -5,8 +5,9 @@
 #include <string>
 #include <stdexcept>
 #include <ostream>
-#include <iostream>
 #include <memory> 
+#include "cpp_observer.h"
+
 namespace Pcap {
 
     class Error : public std::runtime_error {       
@@ -18,7 +19,11 @@ namespace Pcap {
         TSTAMP_PRECISION_MICRO=0,
         TSTAMP_PRECISION_NANO
     };
-    class Dev {
+
+    class Packet {
+    };
+
+    class Dev: public Observable<Packet> {
     public:
         Dev(const std::string& name, const std::string& description="");
         ~Dev() ;
