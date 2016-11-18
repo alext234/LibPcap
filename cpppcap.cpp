@@ -146,12 +146,12 @@ namespace Pcap {
 
 
 
-    std::string Packet::dataHex (uint16_t n) const {
+    std::string Packet::dataHex (uint16_t n, std::string separator) const {
         std::ostringstream ss;
         if (n>_data.size()) n=_data.size();
         ss<<std::setfill('0')<<std::hex;
         for (auto it= _data.cbegin(); it!=_data.cbegin()+n; ++it) {
-            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<" ";
+            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<separator;
         }
         return ss.str();
     }

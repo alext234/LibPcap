@@ -29,7 +29,7 @@ namespace Pcap {
         uint16_t len()const {return _len;}
         const std::vector<uint8_t>& data() const{ return _data;}
         
-        std::string dataHex (uint16_t n) const;   
+        std::string dataHex (uint16_t n, std::string separator=" ") const;   
     private:        
         uint16_t _len;
         TimeStamp _ts;
