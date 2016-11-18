@@ -1,5 +1,9 @@
 #include "cpppcap.h"
 #include "pcap.h"
+#include <sstream>
+#include <iterator>
+#include <algorithm>
+#include <iomanip>
 
 namespace Pcap {
 
@@ -84,6 +88,7 @@ namespace Pcap {
     Dev::~Dev() {  
     }
 
+
     class Dev::CPcapWrapper {
     public:
         CPcapWrapper() {
@@ -95,10 +100,33 @@ namespace Pcap {
                 _handler=nullptr;
             }
         }
-        
-        pcap_t *_handler;    // used to store returned  handled from pcap_open_* functions
+    
+        // call back function to be used with pcap_loop or pcap_dispatch
+        static void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data) { 
+            Dev *dev = reinterpret_cast<Dev*>(param);
+            Packet packet;
+            packet._len = header->len;
+            packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
+            packet._data.reserve(header->len);
+            packet._data.assign(pkt_data, pkt_data+header->len);  // copy from array
+
+            dev -> notifyObservers(packet);
+           
+        }
+        pcap_t *_handler;    // used to store returned  handled from pcap_open_* functions        
+      
     };
 
+
+
+    void Dev::loop(void) {
+        if (!_cwrapper->_handler) {
+            return;
+        }
+        
+        pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
+
+    }
 
     std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error){
 
@@ -115,4 +143,17 @@ namespace Pcap {
     
        
     }
+
+
+
+    std::string Packet::dataHex (uint16_t n) const {
+        std::ostringstream ss;
+        if (n>_data.size()) n=_data.size();
+        ss<<std::setfill('0')<<std::hex;
+        for (auto it= _data.cbegin(); it!=_data.cbegin()+n; ++it) {
+            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<" ";
+        }
+        return ss.str();
+    }
+
 } // namespace Pcap 

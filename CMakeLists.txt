@@ -7,6 +7,7 @@ add_subdirectory(googletest)
 
 set(LIBPCAP ${CMAKE_SOURCE_DIR}/libpcap)  
 set(LIBPCAP_STATIC ${CMAKE_SOURCE_DIR}/libpcap/libpcap.a)  
+set(CPPOBSERVER ${CMAKE_SOURCE_DIR}/cppobserver)  
 add_custom_command(
     OUTPUT  ${LIBPCAP_STATIC}
     COMMAND cwd=$(pwd) && cd ${LIBPCAP} && pwd && ./configure --enable-dbus=no --enable-bluetooth=no --enable-usb=no && make && cd ${cwd}
@@ -19,6 +20,7 @@ set(GOOGLETEST ${CMAKE_SOURCE_DIR}/googletest/)
 include_directories(${LIBPCAP})
 include_directories(${GOOGLETEST}/googlemock/include ${GOOGLETEST}/googletest/include)
 link_directories(${GOOGLETEST}/build/googlemock ${GOOGLETEST}/build/googlemock/gtest)
+include_directories(${CPPOBSERVER})
 
 # set build type: cmake -DCMAKE_BUILD_TYPE=Debug  ; to see all options of AddressSanitizer, set the environment variable ASAN_OPTIONS=help=1
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wno-unused-parameter -fsanitize=address")

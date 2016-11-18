@@ -5,8 +5,11 @@
 #include <string>
 #include <stdexcept>
 #include <ostream>
-#include <iostream>
 #include <memory> 
+#include <chrono>
+#include <cstdint>
+#include "cpp_observer.h"
+
 namespace Pcap {
 
     class Error : public std::runtime_error {       
@@ -18,7 +21,24 @@ namespace Pcap {
         TSTAMP_PRECISION_MICRO=0,
         TSTAMP_PRECISION_NANO
     };
-    class Dev {
+
+    class Packet {
+    public:
+        using TimeStamp =   std::chrono::time_point<std::chrono::high_resolution_clock> ;
+        const TimeStamp& ts() const { return const_cast<const TimeStamp&>(_ts);}
+        uint16_t len()const {return _len;}
+        const std::vector<uint8_t>& data() const{ return _data;}
+        
+        std::string dataHex (uint16_t n) const;   
+    private:        
+        uint16_t _len;
+        TimeStamp _ts;
+        std::vector<uint8_t> _data;
+        friend  class Dev;
+        
+    };
+
+    class Dev: public Observable<Packet> {
     public:
         Dev(const std::string& name, const std::string& description="");
         ~Dev() ;
@@ -30,6 +50,9 @@ namespace Pcap {
         bool isLoopback()const ;
         Dev(const Dev&)=default;
         Dev(Dev&& r);
+
+
+        void loop(void); // start the receive loop
     private:
         std::string _name;
         std::string _description;
@@ -38,10 +61,12 @@ namespace Pcap {
         class CPcapWrapper;
         std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
 
+        void notify (const Packet& packet);
         // 'friends'
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);
         friend std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
         friend std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error);
+        friend class CPcapWrapper;
     };
    
     // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
