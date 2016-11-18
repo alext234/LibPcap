@@ -84,10 +84,6 @@ namespace Pcap {
     Dev::~Dev() {  
     }
 
-    void Dev::loop(void) {
-
-        // TODO: use pcap_loop
-    }
 
     class Dev::CPcapWrapper {
     public:
@@ -100,10 +96,31 @@ namespace Pcap {
                 _handler=nullptr;
             }
         }
-        
-        pcap_t *_handler;    // used to store returned  handled from pcap_open_* functions
+    
+        // call back function to be used with pcap_loop or pcap_dispatch
+        static void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data) { 
+            Dev *dev = reinterpret_cast<Dev*>(param);
+            Packet packet;
+            packet._len = header->len;
+            packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
+            packet._data = pkt_data;
+
+            dev -> notifyObservers(packet);
+           
+        }
+        pcap_t *_handler;    // used to store returned  handled from pcap_open_* functions        
+      
     };
 
+
+    void Dev::loop(void) {
+        if (!_cwrapper->_handler) {
+            return;
+        }
+        
+        pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
+
+    }
 
     std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error){
 

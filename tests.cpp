@@ -32,7 +32,7 @@ TEST(CppPcap, openOfflinePcapFileNotExist) {
 
 }
 
-TEST(CppPcap, openOfflinePcapFile) {
+TEST(CppPcap, openOfflinePcapFileObserverObject) {
 
 
     struct PacketObserver: public AbstractObserver<Packet> {
@@ -53,10 +53,34 @@ TEST(CppPcap, openOfflinePcapFile) {
     auto observer = std::make_shared<PacketObserver>();
     dev->registerObserver(observer);
 
+    
     dev->loop();
     ASSERT_THAT (observer->receivedCount, Gt(0));
 
 }
+
+TEST(CppPcap, openOfflinePcapFileLambda) {
+
+
+    int receivedCount=0;
+
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+    // register observer 
+    dev->registerObserver([&receivedCount](const Packet& packet){
+        ++receivedCount;
+    });
+
+    
+    dev->loop();
+    ASSERT_THAT (receivedCount, Gt(0));
+
+}
+
+// TODO openOffline but copy packet 
 
 int main(int argc, char *argv[])
 {

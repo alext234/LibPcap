@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <ostream>
 #include <memory> 
+#include <chrono>
 #include "cpp_observer.h"
 
 namespace Pcap {
@@ -21,6 +22,18 @@ namespace Pcap {
     };
 
     class Packet {
+    public:
+        using TimeStamp =   std::chrono::time_point<std::chrono::high_resolution_clock> ;
+        //Packet (const Packet& lhs); // TODO: implement deep copy
+        //Packet& operator=(const Packet& lhs); // TODO: implement deep copy
+
+        const TimeStamp& ts() { return _ts;}
+    private:        
+        unsigned int _len;
+        TimeStamp _ts;
+        const unsigned char* _data;
+        friend  class Dev;
+        
     };
 
     class Dev: public Observable<Packet> {
@@ -46,10 +59,12 @@ namespace Pcap {
         class CPcapWrapper;
         std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
 
+        void notify (const Packet& packet);
         // 'friends'
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);
         friend std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
         friend std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error);
+        friend class CPcapWrapper;
     };
    
     // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
