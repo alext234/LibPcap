@@ -27,7 +27,7 @@ namespace Pcap {
         //Packet (const Packet& lhs); // TODO: implement deep copy
         //Packet& operator=(const Packet& lhs); // TODO: implement deep copy
 
-        const TimeStamp& ts() { return _ts;}
+        const TimeStamp& ts() const { return const_cast<const TimeStamp&>(_ts);}
     private:        
         unsigned int _len;
         TimeStamp _ts;
