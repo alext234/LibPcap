@@ -1,5 +1,9 @@
 #include "cpppcap.h"
 #include "pcap.h"
+#include <sstream>
+#include <iterator>
+#include <algorithm>
+#include <iomanip>
 
 namespace Pcap {
 
@@ -103,7 +107,8 @@ namespace Pcap {
             Packet packet;
             packet._len = header->len;
             packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
-            packet._data = pkt_data;
+            packet._data.reserve(header->len);
+            packet._data.assign(pkt_data, pkt_data+header->len);  // copy from array
 
             dev -> notifyObservers(packet);
            
@@ -111,6 +116,7 @@ namespace Pcap {
         pcap_t *_handler;    // used to store returned  handled from pcap_open_* functions        
       
     };
+
 
 
     void Dev::loop(void) {
@@ -138,5 +144,16 @@ namespace Pcap {
        
     }
 
+
+
+    std::string Packet::dataHex (uint16_t n) const {
+        std::ostringstream ss;
+        if (n>_data.size()) n=_data.size();
+        ss<<std::setfill('0')<<std::hex;
+        for (auto it= _data.cbegin(); it!=_data.cbegin()+n; ++it) {
+            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<" ";
+        }
+        return ss.str();
+    }
 
 } // namespace Pcap 

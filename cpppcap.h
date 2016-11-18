@@ -7,6 +7,7 @@
 #include <ostream>
 #include <memory> 
 #include <chrono>
+#include <cstdint>
 #include "cpp_observer.h"
 
 namespace Pcap {
@@ -24,14 +25,15 @@ namespace Pcap {
     class Packet {
     public:
         using TimeStamp =   std::chrono::time_point<std::chrono::high_resolution_clock> ;
-        //Packet (const Packet& lhs); // TODO: implement deep copy
-        //Packet& operator=(const Packet& lhs); // TODO: implement deep copy
-
         const TimeStamp& ts() const { return const_cast<const TimeStamp&>(_ts);}
+        uint16_t len()const {return _len;}
+        const std::vector<uint8_t>& data() const{ return _data;}
+        
+        std::string dataHex (uint16_t n) const;   
     private:        
-        unsigned int _len;
+        uint16_t _len;
         TimeStamp _ts;
-        const unsigned char* _data;
+        std::vector<uint8_t> _data;
         friend  class Dev;
         
     };
