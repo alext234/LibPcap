@@ -105,7 +105,6 @@ namespace Pcap {
     std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
     std::shared_ptr<Dev> lookUpDev(void) throw(Error);
     std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
-    bool compareDumpFiles (std::string filename1, std::string filename2) throw (Error) ;
 
 }
 #endif //__LIB_CPPPCAP__
