@@ -39,8 +39,9 @@ namespace Pcap {
         friend  class Dev;
         friend class FileDumper;
         
+        friend bool operator==(const Packet&, const Packet&);
     };
-
+    bool operator==(const Packet&, const Packet&);
 
     class Dev;
 
@@ -78,7 +79,7 @@ namespace Pcap {
         Dev(const Dev&)=default;
         Dev(Dev&& r);
 
-
+        void breakLoop(void); 
         void loop(void); // start the receive loop
         void loop(Dumper&);
         std::shared_ptr<FileDumper> generateFileDumper(std::string filename); // get a fileDumper which can be used to write packet 
@@ -104,6 +105,7 @@ namespace Pcap {
     std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
     std::shared_ptr<Dev> lookUpDev(void) throw(Error);
     std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
+    bool compareDumpFiles (std::string filename1, std::string filename2) throw (Error) ;
 
 }
 #endif //__LIB_CPPPCAP__

@@ -59,6 +59,18 @@ namespace Pcap {
         ;
         return os;
     }
+    bool operator==(const Packet& packet1, const Packet& packet2) {
+        if (packet1._len!=packet2._len) return false;
+        if (packet1._caplen!=packet2._caplen) return false;
+        if (packet1._ts != packet2._ts) return false;
+        auto it1=packet1._data.cbegin();
+        auto it2=packet2._data.cbegin();
+        for (;it1!=packet1._data.cend();) {
+            if (*it1!=*it2) return false;
+            ++it1; ++it2;
+        }
+        return true;
+    }
     
     Dev::Dev(const std::string& name, const std::string& description):_name{name},_description{description},
             _cwrapper{std::make_unique<CPcapWrapper>()}
@@ -118,6 +130,13 @@ namespace Pcap {
       
     };
 
+    void Dev::breakLoop(void) {
+        if (!_cwrapper->_handler) {
+            return;
+        }
+        pcap_breakloop(_cwrapper->_handler);
+        
+    }
 
 
     void Dev::loop(void) {
@@ -228,4 +247,5 @@ namespace Pcap {
 
     }
     FileDumper::~FileDumper() {    }
+
 } // namespace Pcap 

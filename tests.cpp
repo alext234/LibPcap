@@ -58,6 +58,39 @@ TEST(CppPcap, openOfflinePcapFileObserverObject) {
     ASSERT_THAT (observer->receivedCount, Gt(0));
 
 }
+
+TEST(CppPcap, openOfflinePcapFileObserverObjectBreakLoopByCount) {
+
+
+    enum{COUNT_TO_RECEIVE=5};
+    struct PacketObserver: public AbstractObserver<Packet> {
+        PacketObserver(std::shared_ptr<Dev> dev) : dev{dev} {}
+        void onNotified(const Packet& packet) override {
+            receivedCount +=1;
+            if (receivedCount==COUNT_TO_RECEIVE){
+                dev-> breakLoop();
+            }
+        }
+
+        int receivedCount=0;
+        std::shared_ptr<Dev> dev;
+
+    };
+
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+    // register observer 
+    auto observer = std::make_shared<PacketObserver>(dev);
+    dev->registerObserver(observer);
+
+    
+    dev->loop();
+    ASSERT_THAT (observer->receivedCount, Eq(COUNT_TO_RECEIVE));
+
+}
 TEST(CppPcap, openOfflinePcapMultipleFileObserverObject) {
 
 
@@ -123,6 +156,37 @@ TEST(CppPcap, openOfflinePcapFileLambda) {
 
 }
 
+bool comparePcapFiles(std::string filename1, std::string filename2) {
+
+    auto dev1 = openOffline(filename1);
+    auto dev2 = openOffline(filename2);
+
+    std::vector<Packet> packetlist1, packetlist2;
+
+    dev1->registerObserver([&packetlist1](const Packet& packet){
+        packetlist1.push_back(packet);
+    });
+
+    dev1->loop();
+    dev2->registerObserver([&packetlist2](const Packet& packet){
+        packetlist2.push_back(packet);
+    });
+
+    dev2->loop();
+    
+    auto it1= packetlist1.cbegin();
+    auto it2= packetlist2.cbegin();
+    for (; it1!=packetlist1.cend(); ) {
+        if (*it1==*it2){ // compare 2 packets
+
+            ++it1;
+            ++it2;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
 
 TEST(CppPcap, openOfflinePcapFileAndWriteToPCap) {
 
@@ -139,11 +203,12 @@ TEST(CppPcap, openOfflinePcapFileAndWriteToPCap) {
     ASSERT_THAT (fileDumper->packetCount(), Gt(uint32_t(0)));
     fileDumper.reset(); // also force close of the file
 
-    // TODO: compare the output file with the original one
+    ASSERT_THAT(comparePcapFiles(pcapFile, "output.cap"), Eq(true));
 
 }
-// TODO: dump to file via observer
 
+
+// TODO: dump to file via observer
 
 int main(int argc, char *argv[])
 {
