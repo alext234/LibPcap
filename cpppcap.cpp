@@ -106,6 +106,7 @@ namespace Pcap {
             Dev *dev = reinterpret_cast<Dev*>(param);
             Packet packet;
             packet._len = header->len;
+            packet._caplen = header->caplen;
             packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
             packet._data.reserve(header->len);
             packet._data.assign(pkt_data, pkt_data+header->len);  // copy from array
@@ -125,6 +126,27 @@ namespace Pcap {
         }
         
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
+
+    }
+
+    void Dev::loop(Dumper& dumper) {
+        struct PacketObserver: public AbstractObserver<Packet> {
+            PacketObserver(Dumper&d):_dumper(d) {}
+            void onNotified(const Packet& packet) override {
+                _dumper.dumpPacket (packet);
+
+            }
+            Dumper& _dumper;
+        };
+        auto dumpObserver = std::make_shared <PacketObserver> (dumper);
+
+        this->registerObserver (dumpObserver);
+
+        loop();
+
+        this->deregisterObserver (dumpObserver);
+
+        
 
     }
 
@@ -156,4 +178,54 @@ namespace Pcap {
         return ss.str();
     }
 
+    std::shared_ptr<FileDumper> Dev::generateFileDumper(std::string filename){
+
+        std::shared_ptr<FileDumper> fd(new FileDumper (*this,filename));
+        
+        return fd; 
+    
+    }
+
+    class FileDumper::CPcapWrapper {
+    public: 
+        CPcapWrapper() {
+            _handler = nullptr;
+        } 
+        ~CPcapWrapper () {
+            if (_handler!=nullptr) {
+                pcap_dump_close(_handler);
+                _handler=nullptr;
+            }
+        }
+        pcap_dumper_t* _handler;
+
+        
+    };
+
+    FileDumper::FileDumper (const Dev& dev,std::string filename) throw (Error):  
+            _packetCount(0), _cwrapper{std::make_unique<CPcapWrapper>()} {
+
+        pcap_t *pcap_handler = dev._cwrapper->_handler;
+        if (pcap_handler==nullptr) throw Error ("pcap_handler is null ");
+        pcap_dumper_t *dump_handler = pcap_dump_open(pcap_handler, filename.c_str());
+        if (dump_handler==nullptr) {
+            throw Error(std::string(pcap_geterr(pcap_handler)));
+        }
+        _cwrapper->_handler = dump_handler;
+    }
+
+    void FileDumper::dumpPacket(const Packet& packet) {
+        struct pcap_pkthdr hdr;
+
+        if (!_cwrapper->_handler) return;
+        auto ts_micro = std::chrono::duration_cast<std::chrono::microseconds>(packet.ts().time_since_epoch()).count();
+        hdr.ts.tv_sec =  ts_micro/1000000;
+        hdr.ts.tv_usec =  ts_micro%1000000;
+        hdr.len = packet._len;
+        hdr.caplen  = packet._caplen;
+        pcap_dump ((u_char*)(_cwrapper->_handler), &hdr, &packet.data()[0]);
+        ++_packetCount;
+
+    }
+    FileDumper::~FileDumper() {    }
 } // namespace Pcap 

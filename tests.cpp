@@ -124,7 +124,26 @@ TEST(CppPcap, openOfflinePcapFileLambda) {
 }
 
 
-// TODO openOffline and write to pcap
+TEST(CppPcap, openOfflinePcapFileAndWriteToPCap) {
+
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+
+    auto fileDumper = dev->generateFileDumper("output.cap");
+
+
+    dev->loop(*fileDumper);
+    ASSERT_THAT (fileDumper->packetCount(), Gt(uint32_t(0)));
+    fileDumper.reset(); // also force close of the file
+
+    // TODO: compare the output file with the original one
+
+}
+// TODO: dump to file via observer
+
 
 int main(int argc, char *argv[])
 {
