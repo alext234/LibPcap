@@ -59,6 +59,18 @@ namespace Pcap {
         ;
         return os;
     }
+    bool operator==(const Packet& packet1, const Packet& packet2) {
+        if (packet1._len!=packet2._len) return false;
+        if (packet1._caplen!=packet2._caplen) return false;
+        if (packet1._ts != packet2._ts) return false;
+        auto it1=packet1._data.cbegin();
+        auto it2=packet2._data.cbegin();
+        for (;it1!=packet1._data.cend();) {
+            if (*it1!=*it2) return false;
+            ++it1; ++it2;
+        }
+        return true;
+    }
     
     Dev::Dev(const std::string& name, const std::string& description):_name{name},_description{description},
             _cwrapper{std::make_unique<CPcapWrapper>()}
@@ -106,6 +118,7 @@ namespace Pcap {
             Dev *dev = reinterpret_cast<Dev*>(param);
             Packet packet;
             packet._len = header->len;
+            packet._caplen = header->caplen;
             packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
             packet._data.reserve(header->len);
             packet._data.assign(pkt_data, pkt_data+header->len);  // copy from array
@@ -117,6 +130,13 @@ namespace Pcap {
       
     };
 
+    void Dev::breakLoop(void) {
+        if (!_cwrapper->_handler) {
+            return;
+        }
+        pcap_breakloop(_cwrapper->_handler);
+        
+    }
 
 
     void Dev::loop(void) {
@@ -125,6 +145,27 @@ namespace Pcap {
         }
         
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
+
+    }
+
+    void Dev::loop(Dumper& dumper) {
+        struct PacketObserver: public AbstractObserver<Packet> {
+            PacketObserver(Dumper&d):_dumper(d) {}
+            void onNotified(const Packet& packet) override {
+                _dumper.dumpPacket (packet);
+
+            }
+            Dumper& _dumper;
+        };
+        auto dumpObserver = std::make_shared <PacketObserver> (dumper);
+
+        this->registerObserver (dumpObserver);
+
+        loop();
+
+        this->deregisterObserver (dumpObserver);
+
+        
 
     }
 
@@ -146,14 +187,65 @@ namespace Pcap {
 
 
 
-    std::string Packet::dataHex (uint16_t n) const {
+    std::string Packet::dataHex (uint16_t n, std::string separator) const {
         std::ostringstream ss;
         if (n>_data.size()) n=_data.size();
         ss<<std::setfill('0')<<std::hex;
         for (auto it= _data.cbegin(); it!=_data.cbegin()+n; ++it) {
-            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<" ";
+            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<separator;
         }
         return ss.str();
     }
+
+    std::shared_ptr<FileDumper> Dev::generateFileDumper(std::string filename){
+
+        std::shared_ptr<FileDumper> fd(new FileDumper (*this,filename));
+        
+        return fd; 
+    
+    }
+
+    class FileDumper::CPcapWrapper {
+    public: 
+        CPcapWrapper() {
+            _handler = nullptr;
+        } 
+        ~CPcapWrapper () {
+            if (_handler!=nullptr) {
+                pcap_dump_close(_handler);
+                _handler=nullptr;
+            }
+        }
+        pcap_dumper_t* _handler;
+
+        
+    };
+
+    FileDumper::FileDumper (const Dev& dev,std::string filename) throw (Error):  
+            _packetCount(0), _cwrapper{std::make_unique<CPcapWrapper>()} {
+
+        pcap_t *pcap_handler = dev._cwrapper->_handler;
+        if (pcap_handler==nullptr) throw Error ("pcap_handler is null ");
+        pcap_dumper_t *dump_handler = pcap_dump_open(pcap_handler, filename.c_str());
+        if (dump_handler==nullptr) {
+            throw Error(std::string(pcap_geterr(pcap_handler)));
+        }
+        _cwrapper->_handler = dump_handler;
+    }
+
+    void FileDumper::dumpPacket(const Packet& packet) {
+        struct pcap_pkthdr hdr;
+
+        if (!_cwrapper->_handler) return;
+        auto ts_micro = std::chrono::duration_cast<std::chrono::microseconds>(packet.ts().time_since_epoch()).count();
+        hdr.ts.tv_sec =  ts_micro/1000000;
+        hdr.ts.tv_usec =  ts_micro%1000000;
+        hdr.len = packet._len;
+        hdr.caplen  = packet._caplen;
+        pcap_dump ((u_char*)(_cwrapper->_handler), &hdr, &packet.data()[0]);
+        ++_packetCount;
+
+    }
+    FileDumper::~FileDumper() {    }
 
 } // namespace Pcap 
