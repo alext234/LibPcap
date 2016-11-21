@@ -58,6 +58,49 @@ TEST(CppPcap, openOfflinePcapFileObserverObject) {
     ASSERT_THAT (observer->receivedCount, Gt(0));
 
 }
+TEST(CppPcap, openOfflinePcapMultipleFileObserverObject) {
+
+
+    struct PacketObserver: public AbstractObserver<Packet> {
+        void onNotified(const Packet& packet) override {
+            receivedCount +=1;            
+            packets.push_back (packet);
+        }
+
+        int receivedCount=0;
+        std::vector<Packet> packets;
+        
+    };
+
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+    // register observer 
+    auto observer1 = std::make_shared<PacketObserver>();
+    auto observer2 = std::make_shared<PacketObserver>();
+    dev->registerObserver(observer1);
+    dev->registerObserver(observer2);
+
+    
+    dev->loop();
+    ASSERT_THAT (observer1->receivedCount, Eq(observer2->receivedCount));
+
+    // make sure packets contents are the same for both receiver
+    for (unsigned int i=0; i<observer1->packets.size(); ++i) {
+        std::vector<uint8_t>observer1Data = observer1->packets[i].data();
+        std::vector<uint8_t>observer2Data = observer2->packets[i].data();
+        ASSERT_THAT(observer1Data.size(), Eq(observer2Data.size()));
+        
+        for (unsigned int j=0; j<observer1Data.size(); ++j) {
+            ASSERT_THAT (observer1Data[j], Eq(observer2Data[j]));
+        }
+
+
+    }
+
+}
 
 TEST(CppPcap, openOfflinePcapFileLambda) {
 
@@ -80,7 +123,8 @@ TEST(CppPcap, openOfflinePcapFileLambda) {
 
 }
 
-// TODO openOffline but copy packet 
+
+// TODO openOffline and write to pcap
 
 int main(int argc, char *argv[])
 {
