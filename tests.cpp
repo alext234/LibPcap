@@ -207,8 +207,39 @@ TEST(CppPcap, openOfflinePcapFileAndWriteToPCap) {
 
 }
 
+TEST(CppPcap, openOfflinePcapFileAndWriteToMultiplePcap) {
+
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+
+    auto fileDumper1 = dev->generateFileDumper("output1.cap");
+    auto fileDumper2 = dev->generateFileDumper("output2.cap");
+
+
+    dev->loop(std::vector<std::shared_ptr<Dumper>>{fileDumper1, fileDumper2});
+
+    ASSERT_THAT (fileDumper1->packetCount(), Gt(uint32_t(0)));
+    ASSERT_THAT (fileDumper2->packetCount(), Gt(uint32_t(0)));
+
+    fileDumper1.reset(); 
+    fileDumper2.reset(); 
+
+    ASSERT_THAT(comparePcapFiles(pcapFile, "output1.cap"), Eq(true));
+    ASSERT_THAT(comparePcapFiles(pcapFile, "output2.cap"), Eq(true));
+
+}
+
 
 // TODO: dump to file via observer
+
+
+// TODO: test openLive()
+
+// TODO: update example with openLive and update README.md
+
 
 int main(int argc, char *argv[])
 {
