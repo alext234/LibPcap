@@ -148,15 +148,34 @@ namespace Pcap {
 
     }
 
-    void Dev::loop(Dumper& dumper) {
-        struct PacketObserver: public AbstractObserver<Packet> {
-            PacketObserver(Dumper&d):_dumper(d) {}
-            void onNotified(const Packet& packet) override {
-                _dumper.dumpPacket (packet);
+    struct PacketObserver: public AbstractObserver<Packet> {
+        PacketObserver(Dumper&d):_dumper(d) {}
+        void onNotified(const Packet& packet) override {
+            _dumper.dumpPacket (packet);
+    
+        }
+        Dumper& _dumper;
+    };
+    void Dev::loop(const std::vector<std::shared_ptr<Dumper>>& dumperList) {
 
-            }
-            Dumper& _dumper;
-        };
+        
+        std::vector<std::shared_ptr<PacketObserver>> dumpObservers;
+        for (auto it: dumperList) {
+            
+            auto observer = std::make_shared<PacketObserver> ( (*it) );
+            dumpObservers.push_back(observer);
+            this->registerObserver ( observer);
+        }
+
+
+        loop();
+
+        for (auto it:dumpObservers ) {
+            
+            this->registerObserver ( it);
+        }
+    }
+    void Dev::loop(Dumper& dumper) {
         auto dumpObserver = std::make_shared <PacketObserver> (dumper);
 
         this->registerObserver (dumpObserver);
