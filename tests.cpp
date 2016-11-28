@@ -232,8 +232,48 @@ TEST(CppPcap, openOfflinePcapFileAndWriteToMultiplePcap) {
 
 }
 
+TEST(CppPcap, dumpSelectivelyToFileInObserver) {
 
-// TODO: dump to file via observer
+
+    struct PacketObserver: public AbstractObserver<Packet> {
+        PacketObserver(Dumper& dumper): _dumper{dumper} {}
+        void onNotified(const Packet& packet) override {
+            ++receivedCount;
+		
+            // dumper every other packet
+            if (receivedCount%2==0) {
+                _dumper.dumpPacket (packet);
+                ++dumpCount;
+            }
+
+        }
+
+        int receivedCount=0;
+        int dumpCount=0;
+        Dumper& _dumper;
+        
+
+        
+    };
+
+    std::string pcapFile{SAMPLE_PCAP_DIR};
+    pcapFile+="sample_http.cap";
+    
+    
+    auto dev = openOffline(pcapFile);
+    auto fileDumper1 = dev->generateFileDumper("output1.cap");
+
+    // register observer 
+    auto observer1 = std::make_shared<PacketObserver>(*fileDumper1);
+    dev->registerObserver(observer1);
+
+
+    dev->loop();
+    ASSERT_THAT (observer1->dumpCount, observer1->receivedCount/2); // TODO: need to have better checking (.e.g. check the content of output1.cap)
+
+    
+	
+}
 
 
 // TODO: test openLive()
