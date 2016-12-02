@@ -27,13 +27,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wno-u
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wno-unused-parameter")
 
 
-add_executable(runtests  tests.cpp)
+add_executable(runtests_cpppcap  tests.cpp)
 set(SAMPLE_PCAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples/)
-set_target_properties(runtests PROPERTIES COMPILE_FLAGS -D'SAMPLE_PCAP_DIR="${SAMPLE_PCAP_DIR}"')
-target_link_libraries(runtests gmock)
-target_link_libraries(runtests gtest)
-target_link_libraries(runtests pthread)
-target_link_libraries(runtests cpppcap)
-target_link_libraries(runtests ${LIBPCAP_STATIC})
+set_target_properties(runtests_cpppcap PROPERTIES COMPILE_FLAGS -D'SAMPLE_PCAP_DIR="${SAMPLE_PCAP_DIR}"')
+target_link_libraries(runtests_cpppcap gmock)
+target_link_libraries(runtests_cpppcap gtest)
+target_link_libraries(runtests_cpppcap pthread)
+target_link_libraries(runtests_cpppcap cpppcap)
+target_link_libraries(runtests_cpppcap ${LIBPCAP_STATIC})
 
 add_subdirectory(examples)
