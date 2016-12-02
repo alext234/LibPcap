@@ -5,9 +5,9 @@ project(LibPcap)
 add_subdirectory(googletest)
 
 
-set(LIBPCAP ${CMAKE_SOURCE_DIR}/libpcap)  
-set(LIBPCAP_STATIC ${CMAKE_SOURCE_DIR}/libpcap/libpcap.a)  
-set(CPPOBSERVER ${CMAKE_SOURCE_DIR}/cppobserver)  
+set(LIBPCAP ${CMAKE_CURRENT_SOURCE_DIR}/libpcap)  
+set(LIBPCAP_STATIC ${CMAKE_CURRENT_SOURCE_DIR}/libpcap/libpcap.a)  
+set(CPPOBSERVER ${CMAKE_CURRENT_SOURCE_DIR}/cppobserver)  
 add_custom_command(
     OUTPUT  ${LIBPCAP_STATIC}
     COMMAND cwd=$(pwd) && cd ${LIBPCAP} && pwd && ./configure --enable-dbus=no --enable-bluetooth=no --enable-usb=no && make && cd ${cwd}
@@ -16,7 +16,7 @@ add_custom_command(
 
 add_library (cpppcap STATIC cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
 
-set(GOOGLETEST ${CMAKE_SOURCE_DIR}/googletest/)  
+set(GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest/)  
 include_directories(${LIBPCAP})
 include_directories(${GOOGLETEST}/googlemock/include ${GOOGLETEST}/googletest/include)
 link_directories(${GOOGLETEST}/build/googlemock ${GOOGLETEST}/build/googlemock/gtest)
@@ -28,7 +28,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wno
 
 
 add_executable(runtests  tests.cpp)
-set(SAMPLE_PCAP_DIR ${CMAKE_SOURCE_DIR}/examples/)
+set(SAMPLE_PCAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples/)
 set_target_properties(runtests PROPERTIES COMPILE_FLAGS -D'SAMPLE_PCAP_DIR="${SAMPLE_PCAP_DIR}"')
 target_link_libraries(runtests gmock)
 target_link_libraries(runtests gtest)
