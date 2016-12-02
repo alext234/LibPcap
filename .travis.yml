@@ -44,6 +44,5 @@ before_install:
 script:
   - mkdir build
   - cd build
-  - ls -a ../libpcap/*.a 
   - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=Release .. && make
   - ./runtests_cpppcap
