@@ -15,7 +15,7 @@ add_custom_command(
 )
 
 add_library (cpppcap STATIC cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
-add_library (pcap STATIC IMPORTED)
+add_library (pcap STATIC IMPORTED GLOBAL)
 set_target_properties(pcap PROPERTIES IMPORTED_LOCATION ${LIBPCAP_STATIC})
 
 set(GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest/)  
