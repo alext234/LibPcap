@@ -7,14 +7,16 @@ add_subdirectory(googletest)
 
 set(LIBPCAP ${CMAKE_CURRENT_SOURCE_DIR}/libpcap)  
 set(LIBPCAP_STATIC ${CMAKE_CURRENT_SOURCE_DIR}/libpcap/libpcap.a)  
+
 set(CPPOBSERVER ${CMAKE_CURRENT_SOURCE_DIR}/cppobserver)  
 add_custom_command(
     OUTPUT  ${LIBPCAP_STATIC}
     COMMAND cwd=$(pwd) && cd ${LIBPCAP} && pwd && ./configure --enable-dbus=no --enable-bluetooth=no --enable-usb=no && make && cd ${cwd}
 )
 
-
 add_library (cpppcap STATIC cpppcap.h cpppcap.cpp ${LIBPCAP_STATIC})
+add_library (pcap STATIC IMPORTED)
+set_target_properties(pcap PROPERTIES IMPORTED_LOCATION ${LIBPCAP_STATIC})
 
 set(GOOGLETEST ${CMAKE_CURRENT_SOURCE_DIR}/googletest/)  
 include_directories(${LIBPCAP})
@@ -34,6 +36,6 @@ target_link_libraries(runtests_cpppcap gmock)
 target_link_libraries(runtests_cpppcap gtest)
 target_link_libraries(runtests_cpppcap pthread)
 target_link_libraries(runtests_cpppcap cpppcap)
-target_link_libraries(runtests_cpppcap ${LIBPCAP_STATIC})
+target_link_libraries(runtests_cpppcap pcap)
 
 add_subdirectory(examples)
