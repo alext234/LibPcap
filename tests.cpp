@@ -6,6 +6,8 @@
 using namespace Pcap;
 using namespace testing;
 
+char** g_argv;
+int g_argc;
 
 // this test case will get from actual system
 TEST(CppPcap,  findAllDevs) {
@@ -276,6 +278,32 @@ TEST(CppPcap, dumpSelectivelyToFileInObserver) {
 }
 
 
+TEST(CppPcap, testASpecifiedPcapFile) {
+
+
+    struct PacketObserver: public AbstractObserver<Packet> {
+        void onNotified(const Packet& packet) override {
+            receivedCount +=1;
+        }
+
+        int receivedCount=0;
+
+    };
+
+    if (g_argc==1) {    
+        return;
+    }
+    std::string pcapFile=std::string(g_argv[1]);
+    
+    
+    auto dev = openOffline(pcapFile);
+    // register observer 
+    auto observer = std::make_shared<PacketObserver>();
+    dev->registerObserver(observer);
+
+    
+    dev->loop();
+}    
 // TODO: test openLive()
 
 // TODO: update example with openLive and update README.md
@@ -284,5 +312,8 @@ TEST(CppPcap, dumpSelectivelyToFileInObserver) {
 int main(int argc, char *argv[])
 {
 	testing::InitGoogleMock (&argc, argv);
+    g_argc = argc;
+    g_argv=argv;
+
 	return RUN_ALL_TESTS();
 }

@@ -21,3 +21,9 @@ from  build directory:
 
 ```
 
+To run an extra test case by openning a particular .pcap file:
+
+```
+./runtests [path_to_pcap_file]
+```
+
