@@ -121,7 +121,7 @@ namespace Pcap {
             packet._caplen = header->caplen;
             packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
             packet._data.reserve(header->len);
-            packet._data.assign(pkt_data, pkt_data+header->len);  // copy from array
+            packet._data.assign(pkt_data, pkt_data+header->caplen);  // copy from array
 
             dev -> notifyObservers(packet);
            
