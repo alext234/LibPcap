@@ -67,7 +67,7 @@ namespace Pcap {
     };
 
     class Dev: public Observable<Packet> {
-    public:
+    public:       
         Dev(const std::string& name, const std::string& description="");
         ~Dev() ;
 
@@ -76,7 +76,9 @@ namespace Pcap {
         bool isUp() const;
         bool isRunning() const;
         bool isLoopback()const ;
-        Dev(const Dev&)=default;
+        
+        Dev() = delete;
+        Dev(const Dev&)=delete;
         Dev(Dev&& r);
 
         void breakLoop(void); 

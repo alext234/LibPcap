@@ -4,27 +4,29 @@
 #include <iterator>
 #include <algorithm>
 #include <iomanip>
+#include <assert.h>
 
 namespace Pcap {
+    using namespace std;
 
-    std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw (Error) {
-        std::vector< std::shared_ptr<Dev> > devList;
+    vector< shared_ptr<Dev> > findAllDevs(void) throw (Error) {
+        vector< shared_ptr<Dev> > devList;
         
         // C code
         char errbuf[PCAP_ERRBUF_SIZE+1];
         pcap_if_t *alldevs;
         if (pcap_findalldevs(&alldevs, errbuf) == -1){
-            throw Error(std::string(errbuf));
+            throw Error(string(errbuf));
         }
         // populate devList
         pcap_if_t *dev_it;
         for(dev_it=alldevs;dev_it;dev_it=dev_it->next){
 
-            Dev dev{dev_it->name?std::string(dev_it->name):"", 
-            dev_it->description?std::string(dev_it->description):""};
+            Dev dev{dev_it->name?string(dev_it->name):"", 
+            dev_it->description?string(dev_it->description):""};
             dev._flags = dev_it->flags;
 
-            devList.push_back (std::make_shared<Dev> (std::move(dev)));
+            devList.push_back (make_shared<Dev> (move(dev)));
         }
 
         pcap_freealldevs(alldevs);
@@ -32,7 +34,7 @@ namespace Pcap {
         return devList;
     }
 
-    std::shared_ptr<Dev> lookUpDev(void) throw(Error) {
+    shared_ptr<Dev> lookUpDev(void) throw(Error) {
         // based on reference implementation from original libpcap
         auto devList = findAllDevs();
         if (devList.size()==0) {
@@ -48,7 +50,7 @@ namespace Pcap {
         
     }
 
-    std::ostream& operator<<(std::ostream& os, const Dev& dev) {
+    ostream& operator<<(ostream& os, const Dev& dev) {
         os << "name: "<< dev._name 
         << "\n  " << "description: " << dev._description
         << "\n  " << "flags: "
@@ -72,16 +74,17 @@ namespace Pcap {
         return true;
     }
     
-    Dev::Dev(const std::string& name, const std::string& description):_name{name},_description{description},
-            _cwrapper{std::make_unique<CPcapWrapper>()}
+    Dev::Dev(const string& name, const string& description):_name{name},_description{description},
+            _cwrapper{make_unique<CPcapWrapper>()}
     {
         _flags =0;
     }
 
     Dev::Dev(Dev&& r) {
-        _name = std::move(r._name);
-        _description = std::move(r._description);
+        _name = move(r._name);
+        _description = move(r._description);
         _flags = r._flags;
+        _cwrapper = move(r._cwrapper);
     }
     
     
@@ -119,7 +122,7 @@ namespace Pcap {
             Packet packet;
             packet._len = header->len;
             packet._caplen = header->caplen;
-            packet._ts = Packet::TimeStamp(std::chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
+            packet._ts = Packet::TimeStamp(chrono::microseconds(header->ts.tv_sec*1000000+header->ts.tv_usec));
             packet._data.reserve(header->len);
             packet._data.assign(pkt_data, pkt_data+header->caplen);  // copy from array
 
@@ -131,7 +134,8 @@ namespace Pcap {
     };
 
     void Dev::breakLoop(void) {
-        if (!_cwrapper->_handler) {
+        assert (_cwrapper!=nullptr);
+        if (_cwrapper->_handler==nullptr) {
             return;
         }
         pcap_breakloop(_cwrapper->_handler);
@@ -140,8 +144,15 @@ namespace Pcap {
 
 
     void Dev::loop(void) {
-        if (!_cwrapper->_handler) {
-            return;
+        assert (_cwrapper!=nullptr);
+        if (_cwrapper->_handler==nullptr) {
+            // most likely live interface, let's use open_live
+            char errbuf[PCAP_ERRBUF_SIZE+1];
+            _cwrapper->_handler =    pcap_open_live(_name.c_str(), BUFSIZ, 1, 1000, errbuf); 
+            if (_cwrapper->_handler==nullptr)  {
+                throw Error(string(errbuf));
+            }
+            
         }
         
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
@@ -156,13 +167,13 @@ namespace Pcap {
         }
         Dumper& _dumper;
     };
-    void Dev::loop(const std::vector<std::shared_ptr<Dumper>>& dumperList) {
+    void Dev::loop(const vector<shared_ptr<Dumper>>& dumperList) {
 
         
-        std::vector<std::shared_ptr<PacketObserver>> dumpObservers;
+        vector<shared_ptr<PacketObserver>> dumpObservers;
         for (auto it: dumperList) {
             
-            auto observer = std::make_shared<PacketObserver> ( (*it) );
+            auto observer = make_shared<PacketObserver> ( (*it) );
             dumpObservers.push_back(observer);
             this->registerObserver ( observer);
         }
@@ -176,7 +187,7 @@ namespace Pcap {
         }
     }
     void Dev::loop(Dumper& dumper) {
-        auto dumpObserver = std::make_shared <PacketObserver> (dumper);
+        auto dumpObserver = make_shared <PacketObserver> (dumper);
 
         this->registerObserver (dumpObserver);
 
@@ -188,14 +199,14 @@ namespace Pcap {
 
     }
 
-    std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error){
+    shared_ptr<Dev>  openOffline(const string& savefile, tstamp_precision precision) throw(Error){
 
         char errbuf[PCAP_ERRBUF_SIZE+1];
         pcap_t *handler = pcap_open_offline_with_tstamp_precision(savefile.c_str(), precision, errbuf);
         if (handler==nullptr) {
-            throw Error(std::string(errbuf));
+            throw Error(string(errbuf));
         }
-        auto dev = std::make_shared<Dev>(savefile);
+        auto dev = make_shared<Dev>(savefile);
         dev->_cwrapper->_handler = handler;
 
         return dev;
@@ -206,19 +217,19 @@ namespace Pcap {
 
 
 
-    std::string Packet::dataHex (uint16_t n, std::string separator) const {
-        std::ostringstream ss;
+    string Packet::dataHex (uint16_t n, string separator) const {
+        ostringstream ss;
         if (n>_data.size()) n=_data.size();
-        ss<<std::setfill('0')<<std::hex;
+        ss<<setfill('0')<<hex;
         for (auto it= _data.cbegin(); it!=_data.cbegin()+n; ++it) {
-            ss<<std::setw(2)<<static_cast<unsigned>(*it)<<separator;
+            ss<<setw(2)<<static_cast<unsigned>(*it)<<separator;
         }
         return ss.str();
     }
 
-    std::shared_ptr<FileDumper> Dev::generateFileDumper(std::string filename){
+    shared_ptr<FileDumper> Dev::generateFileDumper(string filename){
 
-        std::shared_ptr<FileDumper> fd(new FileDumper (*this,filename));
+        shared_ptr<FileDumper> fd(new FileDumper (*this,filename));
         
         return fd; 
     
@@ -240,14 +251,14 @@ namespace Pcap {
         
     };
 
-    FileDumper::FileDumper (const Dev& dev,std::string filename) throw (Error):  
-            _packetCount(0), _cwrapper{std::make_unique<CPcapWrapper>()} {
+    FileDumper::FileDumper (const Dev& dev,string filename) throw (Error):  
+            _packetCount(0), _cwrapper{make_unique<CPcapWrapper>()} {
 
         pcap_t *pcap_handler = dev._cwrapper->_handler;
         if (pcap_handler==nullptr) throw Error ("pcap_handler is null ");
         pcap_dumper_t *dump_handler = pcap_dump_open(pcap_handler, filename.c_str());
         if (dump_handler==nullptr) {
-            throw Error(std::string(pcap_geterr(pcap_handler)));
+            throw Error(string(pcap_geterr(pcap_handler)));
         }
         _cwrapper->_handler = dump_handler;
     }
@@ -256,7 +267,7 @@ namespace Pcap {
         struct pcap_pkthdr hdr;
 
         if (!_cwrapper->_handler) return;
-        auto ts_micro = std::chrono::duration_cast<std::chrono::microseconds>(packet.ts().time_since_epoch()).count();
+        auto ts_micro = chrono::duration_cast<chrono::microseconds>(packet.ts().time_since_epoch()).count();
         hdr.ts.tv_sec =  ts_micro/1000000;
         hdr.ts.tv_usec =  ts_micro%1000000;
         hdr.len = packet._len;
