@@ -304,9 +304,7 @@ TEST(CppPcap, testASpecifiedPcapFile) {
     
     dev->loop();
 }    
-// TODO: test openLive()
 
-// TODO: update example with openLive and update README.md
 
 
 int main(int argc, char *argv[])

@@ -40,3 +40,8 @@ target_link_libraries(runtests_cpppcap cpppcap)
 target_link_libraries(runtests_cpppcap pcap)
 
 add_subdirectory(examples)
+
+
+add_executable(test_live test_live.cpp)
+target_link_libraries(test_live cpppcap)
+target_link_libraries(test_live pcap)
