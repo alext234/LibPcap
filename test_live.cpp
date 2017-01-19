@@ -4,14 +4,21 @@
 using namespace std;
 using namespace Pcap;
 
-// live capture from actual interface
+// syntax:
+// ./test_live eth0 
+// or ./test_live  
+// (use any default interface detected)
 int main(int argc, char** argv) {
     
-    
-    auto dev = lookUpDev();  
-    if (dev==nullptr) {
-        cout << "no interface found"<<endl;
-        exit(1);
+    shared_ptr<Dev> dev;
+    if (argc==2) {
+        dev = openLive(argv[1]);
+    } else {
+        dev = lookUpDev();  
+        if (dev==nullptr) {
+            cout << "no interface found"<<endl;
+            exit(1);
+        }
     }
     
     cout<<*dev<< std::endl;  

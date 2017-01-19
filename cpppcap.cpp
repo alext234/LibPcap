@@ -9,8 +9,8 @@
 namespace Pcap {
     using namespace std;
 
-    vector< shared_ptr<Dev> > findAllDevs(void) throw (Error) {
-        vector< shared_ptr<Dev> > devList;
+    vector< shared_ptr<DevLive> > findAllDevs(void) throw (Error) {
+        vector< shared_ptr<DevLive> > devList;
         
         // C code
         char errbuf[PCAP_ERRBUF_SIZE+1];
@@ -22,11 +22,11 @@ namespace Pcap {
         pcap_if_t *dev_it;
         for(dev_it=alldevs;dev_it;dev_it=dev_it->next){
 
-            Dev dev{dev_it->name?string(dev_it->name):"", 
+            DevLive dev{dev_it->name?string(dev_it->name):"", 
             dev_it->description?string(dev_it->description):""};
             dev._flags = dev_it->flags;
 
-            devList.push_back (make_shared<Dev> (move(dev)));
+            devList.push_back (make_shared<DevLive> (move(dev)));
         }
 
         pcap_freealldevs(alldevs);
@@ -34,7 +34,7 @@ namespace Pcap {
         return devList;
     }
 
-    shared_ptr<Dev> lookUpDev(void) throw(Error) {
+    shared_ptr<DevLive> lookUpDev(void) throw(Error) {
         // based on reference implementation from original libpcap
         auto devList = findAllDevs();
         if (devList.size()==0) {
@@ -53,14 +53,20 @@ namespace Pcap {
     ostream& operator<<(ostream& os, const Dev& dev) {
         os << "name: "<< dev._name 
         << "\n  " << "description: " << dev._description
-        << "\n  " << "flags: "
-        << (dev.isUp()?" UP " :" ")
-        << (dev.isRunning()?" RUNNING " :" ")
-        << (dev.isLoopback()?" LOOPBACK " :" ")
-        
+        << "\n  " ;
         ;
         return os;
     }
+    ostream& operator<<(ostream& os, const DevLive& dev) {
+        return operator<<(os,dynamic_cast<const Dev&> (dev)) << "flags: "
+        << (dev.isUp()?" UP " :" ")
+        << (dev.isRunning()?" RUNNING " :" ")
+        << (dev.isLoopback()?" LOOPBACK " :" ");
+        
+    }
+    
+        
+
     bool operator==(const Packet& packet1, const Packet& packet2) {
         if (packet1._len!=packet2._len) return false;
         if (packet1._caplen!=packet2._caplen) return false;
@@ -77,26 +83,25 @@ namespace Pcap {
     Dev::Dev(const string& name, const string& description):_name{name},_description{description},
             _cwrapper{make_unique<CPcapWrapper>()}
     {
-        _flags =0;
+        
     }
 
     Dev::Dev(Dev&& r) {
         _name = move(r._name);
-        _description = move(r._description);
-        _flags = r._flags;
+        _description = move(r._description);        
         _cwrapper = move(r._cwrapper);
     }
     
     
-    bool Dev::isUp() const{ 
+    bool DevLive::isUp() const{ 
         return _flags & PCAP_IF_UP;
     }
 
-    bool Dev::isRunning() const{
+    bool DevLive::isRunning() const{
         return _flags & PCAP_IF_RUNNING;
     }
 
-    bool Dev::isLoopback() const{
+    bool DevLive::isLoopback() const{
         return _flags & PCAP_IF_LOOPBACK;
     }
   
@@ -145,15 +150,6 @@ namespace Pcap {
 
     void Dev::loop(void) {
         assert (_cwrapper!=nullptr);
-        if (_cwrapper->_handler==nullptr) {
-            // most likely live interface, let's use open_live
-            char errbuf[PCAP_ERRBUF_SIZE+1];
-            _cwrapper->_handler =    pcap_open_live(_name.c_str(), BUFSIZ, 1, 1000, errbuf); 
-            if (_cwrapper->_handler==nullptr)  {
-                throw Error(string(errbuf));
-            }
-            
-        }
         
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
 
@@ -199,14 +195,14 @@ namespace Pcap {
 
     }
 
-    shared_ptr<Dev>  openOffline(const string& savefile, tstamp_precision precision) throw(Error){
+    shared_ptr<DevOffline>  openOffline(const string& savefile, tstamp_precision precision) throw(Error){
 
         char errbuf[PCAP_ERRBUF_SIZE+1];
         pcap_t *handler = pcap_open_offline_with_tstamp_precision(savefile.c_str(), precision, errbuf);
         if (handler==nullptr) {
             throw Error(string(errbuf));
         }
-        auto dev = make_shared<Dev>(savefile);
+        auto dev = make_shared<DevOffline>(savefile);
         dev->_cwrapper->_handler = handler;
 
         return dev;
@@ -215,7 +211,33 @@ namespace Pcap {
        
     }
 
-
+    std::shared_ptr<DevLive> openLive(string name) throw(Error) {
+        auto devList = findAllDevs();
+        if (devList.size()==0) {
+            throw Error ("system has 0 interfaces");
+        }
+        auto it= find_if (devList.cbegin(), devList.cend(), [&name] (const shared_ptr<DevLive>& d) -> bool {
+            return d->name() == name;
+        });
+        if (it==devList.cend()) {
+            throw Error ("interface "+name + " not found");
+        }
+        return *it;
+    }
+    
+    void DevLive::loop(void) {
+        if (_cwrapper->_handler==nullptr) {
+            // most likely live interface, let's use open_live
+            char errbuf[PCAP_ERRBUF_SIZE+1];
+            _cwrapper->_handler =    pcap_open_live(_name.c_str(), BUFSIZ, 1, 1000, errbuf); 
+            if (_cwrapper->_handler==nullptr)  {
+                throw Error(string(errbuf));
+            }
+            
+        }
+        
+        Dev::loop();
+    }
 
     string Packet::dataHex (uint16_t n, string separator) const {
         ostringstream ss;

@@ -44,7 +44,9 @@ namespace Pcap {
     bool operator==(const Packet&, const Packet&);
 
     class Dev;
-
+    class DevOffline;
+    class DevLive;
+    
     class Dumper {
     public:
         virtual ~Dumper() {}
@@ -69,45 +71,68 @@ namespace Pcap {
     class Dev: public Observable<Packet> {
     public:       
         Dev(const std::string& name, const std::string& description="");
-        ~Dev() ;
+        virtual ~Dev() ;
 
         std::string name() const { return _name;}
         std::string description() const { return _description;}
-        bool isUp() const;
-        bool isRunning() const;
-        bool isLoopback()const ;
         
         Dev() = delete;
         Dev(const Dev&)=delete;
         Dev(Dev&& r);
 
         void breakLoop(void); 
-        void loop(void); // start the receive loop
+        virtual void loop(void); // start the receive loop
         void loop(Dumper&);
         void loop(const std::vector<std::shared_ptr<Dumper>>&);
         std::shared_ptr<FileDumper> generateFileDumper(std::string filename); // get a fileDumper which can be used to write packet 
         
-    private:
+    protected:
         std::string _name;
         std::string _description;
-        uint32_t _flags;        
-
+        
+        
         class CPcapWrapper;
         std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
-
+    
         void notify (const Packet& packet);
         // 'friends'
-        friend std::ostream& operator<<(std::ostream& os, const Dev& dev);
-        friend std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
-        friend std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error);
+        friend std::ostream& operator<<(std::ostream& os, const Dev& dev);        
         friend class CPcapWrapper;
         friend class FileDumper;
+        friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);
+        friend std::shared_ptr<DevLive> openLive(std::string) throw(Error);                
+        friend std::shared_ptr<DevOffline>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error);
     };
    
-    // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
-    std::vector< std::shared_ptr<Dev> > findAllDevs(void) throw(Error);
-    std::shared_ptr<Dev> lookUpDev(void) throw(Error);
-    std::shared_ptr<Dev>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
+    // offline .pcap file
+    class DevOffline: public Dev {
+    public:        
+        using Dev::Dev;
+    
+        
+    };
+    
+    // a live interface
+    class DevLive: public Dev {
+    public:
+        using Dev::Dev;                
+        virtual void loop(void) override;
+        bool isUp() const;
+        bool isRunning() const;
+        bool isLoopback()const ;
+        friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);        
 
+    private:
+        uint32_t _flags=0;
+        friend std::ostream& operator<<(std::ostream& os, const DevLive& dev);        
+    };
+    
+    // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
+    std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);
+    std::shared_ptr<DevLive> lookUpDev(void) throw(Error);
+    std::shared_ptr<DevOffline>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
+    std::shared_ptr<DevLive> openLive(std::string name) throw(Error);                
 }
+
+// TODO: too much friendship; cleanup needed
 #endif //__LIB_CPPPCAP__
