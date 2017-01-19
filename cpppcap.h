@@ -99,7 +99,8 @@ namespace Pcap {
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);        
         friend class CPcapWrapper;
         friend class FileDumper;
-        friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);        
+        friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);
+        friend std::shared_ptr<DevLive> openLive(std::string) throw(Error);                
         friend std::shared_ptr<DevOffline>  openOffline(const std::string& savefile, tstamp_precision precision) throw(Error);
     };
    
@@ -130,7 +131,7 @@ namespace Pcap {
     std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);
     std::shared_ptr<DevLive> lookUpDev(void) throw(Error);
     std::shared_ptr<DevOffline>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
-
+    std::shared_ptr<DevLive> openLive(std::string name) throw(Error);                
 }
 
 // TODO: too much friendship; cleanup needed

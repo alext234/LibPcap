@@ -211,6 +211,20 @@ namespace Pcap {
        
     }
 
+    std::shared_ptr<DevLive> openLive(string name) throw(Error) {
+        auto devList = findAllDevs();
+        if (devList.size()==0) {
+            throw Error ("system has 0 interfaces");
+        }
+        auto it= find_if (devList.cbegin(), devList.cend(), [&name] (const shared_ptr<DevLive>& d) -> bool {
+            return d->name() == name;
+        });
+        if (it==devList.cend()) {
+            throw Error ("interface "+name + " not found");
+        }
+        return *it;
+    }
+    
     void DevLive::loop(void) {
         if (_cwrapper->_handler==nullptr) {
             // most likely live interface, let's use open_live
