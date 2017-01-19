@@ -8,7 +8,7 @@ using namespace Pcap;
 int main(int argc, char** argv) {
     
     
-    auto dev = lookUpDev();  
+    auto dev = lookUpDev();  // TODO: add api to support openLive by interface name
     if (dev==nullptr) {
         cout << "no interface found"<<endl;
         exit(1);

@@ -9,8 +9,8 @@
 namespace Pcap {
     using namespace std;
 
-    vector< shared_ptr<Dev> > findAllDevs(void) throw (Error) {
-        vector< shared_ptr<Dev> > devList;
+    vector< shared_ptr<DevLive> > findAllDevs(void) throw (Error) {
+        vector< shared_ptr<DevLive> > devList;
         
         // C code
         char errbuf[PCAP_ERRBUF_SIZE+1];
@@ -22,11 +22,11 @@ namespace Pcap {
         pcap_if_t *dev_it;
         for(dev_it=alldevs;dev_it;dev_it=dev_it->next){
 
-            Dev dev{dev_it->name?string(dev_it->name):"", 
+            DevLive dev{dev_it->name?string(dev_it->name):"", 
             dev_it->description?string(dev_it->description):""};
             dev._flags = dev_it->flags;
 
-            devList.push_back (make_shared<Dev> (move(dev)));
+            devList.push_back (make_shared<DevLive> (move(dev)));
         }
 
         pcap_freealldevs(alldevs);
@@ -34,7 +34,7 @@ namespace Pcap {
         return devList;
     }
 
-    shared_ptr<Dev> lookUpDev(void) throw(Error) {
+    shared_ptr<DevLive> lookUpDev(void) throw(Error) {
         // based on reference implementation from original libpcap
         auto devList = findAllDevs();
         if (devList.size()==0) {
@@ -145,15 +145,6 @@ namespace Pcap {
 
     void Dev::loop(void) {
         assert (_cwrapper!=nullptr);
-        if (_cwrapper->_handler==nullptr) {
-            // most likely live interface, let's use open_live
-            char errbuf[PCAP_ERRBUF_SIZE+1];
-            _cwrapper->_handler =    pcap_open_live(_name.c_str(), BUFSIZ, 1, 1000, errbuf); 
-            if (_cwrapper->_handler==nullptr)  {
-                throw Error(string(errbuf));
-            }
-            
-        }
         
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
 
@@ -199,14 +190,14 @@ namespace Pcap {
 
     }
 
-    shared_ptr<Dev>  openOffline(const string& savefile, tstamp_precision precision) throw(Error){
+    shared_ptr<DevOffline>  openOffline(const string& savefile, tstamp_precision precision) throw(Error){
 
         char errbuf[PCAP_ERRBUF_SIZE+1];
         pcap_t *handler = pcap_open_offline_with_tstamp_precision(savefile.c_str(), precision, errbuf);
         if (handler==nullptr) {
             throw Error(string(errbuf));
         }
-        auto dev = make_shared<Dev>(savefile);
+        auto dev = make_shared<DevOffline>(savefile);
         dev->_cwrapper->_handler = handler;
 
         return dev;
@@ -215,7 +206,19 @@ namespace Pcap {
        
     }
 
-
+    void DevLive::loop(void) {
+        if (_cwrapper->_handler==nullptr) {
+            // most likely live interface, let's use open_live
+            char errbuf[PCAP_ERRBUF_SIZE+1];
+            _cwrapper->_handler =    pcap_open_live(_name.c_str(), BUFSIZ, 1, 1000, errbuf); 
+            if (_cwrapper->_handler==nullptr)  {
+                throw Error(string(errbuf));
+            }
+            
+        }
+        
+        Dev::loop();
+    }
 
     string Packet::dataHex (uint16_t n, string separator) const {
         ostringstream ss;
