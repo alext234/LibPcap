@@ -75,9 +75,6 @@ namespace Pcap {
 
         std::string name() const { return _name;}
         std::string description() const { return _description;}
-        bool isUp() const;
-        bool isRunning() const;
-        bool isLoopback()const ;
         
         Dev() = delete;
         Dev(const Dev&)=delete;
@@ -92,7 +89,7 @@ namespace Pcap {
     protected:
         std::string _name;
         std::string _description;
-        uint32_t _flags;                
+        
         
         class CPcapWrapper;
         std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
@@ -119,6 +116,14 @@ namespace Pcap {
     public:
         using Dev::Dev;                
         virtual void loop(void) override;
+        bool isUp() const;
+        bool isRunning() const;
+        bool isLoopback()const ;
+        friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);        
+
+    private:
+        uint32_t _flags=0;
+        friend std::ostream& operator<<(std::ostream& os, const DevLive& dev);        
     };
     
     // most of the api below follow the same naming convention as the original libpcap http://www.tcpdump.org/manpages/
@@ -127,4 +132,6 @@ namespace Pcap {
     std::shared_ptr<DevOffline>  openOffline(const std::string& savefile, tstamp_precision precision=TSTAMP_PRECISION_MICRO) throw(Error);
 
 }
+
+// TODO: too much friendship; cleanup needed
 #endif //__LIB_CPPPCAP__

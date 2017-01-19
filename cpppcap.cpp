@@ -53,14 +53,20 @@ namespace Pcap {
     ostream& operator<<(ostream& os, const Dev& dev) {
         os << "name: "<< dev._name 
         << "\n  " << "description: " << dev._description
-        << "\n  " << "flags: "
-        << (dev.isUp()?" UP " :" ")
-        << (dev.isRunning()?" RUNNING " :" ")
-        << (dev.isLoopback()?" LOOPBACK " :" ")
-        
+        << "\n  " ;
         ;
         return os;
     }
+    ostream& operator<<(ostream& os, const DevLive& dev) {
+        return operator<<(os,dynamic_cast<const Dev&> (dev)) << "flags: "
+        << (dev.isUp()?" UP " :" ")
+        << (dev.isRunning()?" RUNNING " :" ")
+        << (dev.isLoopback()?" LOOPBACK " :" ");
+        
+    }
+    
+        
+
     bool operator==(const Packet& packet1, const Packet& packet2) {
         if (packet1._len!=packet2._len) return false;
         if (packet1._caplen!=packet2._caplen) return false;
@@ -77,26 +83,25 @@ namespace Pcap {
     Dev::Dev(const string& name, const string& description):_name{name},_description{description},
             _cwrapper{make_unique<CPcapWrapper>()}
     {
-        _flags =0;
+        
     }
 
     Dev::Dev(Dev&& r) {
         _name = move(r._name);
-        _description = move(r._description);
-        _flags = r._flags;
+        _description = move(r._description);        
         _cwrapper = move(r._cwrapper);
     }
     
     
-    bool Dev::isUp() const{ 
+    bool DevLive::isUp() const{ 
         return _flags & PCAP_IF_UP;
     }
 
-    bool Dev::isRunning() const{
+    bool DevLive::isRunning() const{
         return _flags & PCAP_IF_RUNNING;
     }
 
-    bool Dev::isLoopback() const{
+    bool DevLive::isLoopback() const{
         return _flags & PCAP_IF_LOOPBACK;
     }
   
