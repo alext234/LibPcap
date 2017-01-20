@@ -10,7 +10,7 @@ using namespace Pcap;
 // (use any default interface detected)
 int main(int argc, char** argv) {
     
-    shared_ptr<Dev> dev;
+    shared_ptr<DevLive> dev;
     if (argc==2) {
         dev = openLive(argv[1]);
     } else {
@@ -24,14 +24,19 @@ int main(int argc, char** argv) {
     cout<<*dev<< std::endl;  
     
     struct PacketObserver: public AbstractObserver<Packet> {
-        PacketObserver(std::shared_ptr<Dev> dev) : dev{dev} {}
+        PacketObserver(std::shared_ptr<DevLive> dev) : dev{dev} {}
         void onNotified(const Packet& packet) override {
-            receivedCount +=1;
-            cout << "received : "<< receivedCount<< " packets" << endl;
+            
+            auto stat = dev -> getStats();
+            cout << "\r";
+            cout << "  received : "<< stat.recv;
+            cout << "  dropped: "<< stat.drop;
+            cout << "  ifdropped: "<< stat.ifdrop;
+            cout <<flush;
         }
 
-        int receivedCount=0;
-        std::shared_ptr<Dev> dev;
+
+        std::shared_ptr<DevLive> dev;
 
     };
     auto observer = std::make_shared<PacketObserver>(dev);

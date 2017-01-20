@@ -91,22 +91,10 @@ namespace Pcap {
         _description = move(r._description);        
         _cwrapper = move(r._cwrapper);
     }
-    
-    
-    bool DevLive::isUp() const{ 
-        return _flags & PCAP_IF_UP;
-    }
-
-    bool DevLive::isRunning() const{
-        return _flags & PCAP_IF_RUNNING;
-    }
-
-    bool DevLive::isLoopback() const{
-        return _flags & PCAP_IF_LOOPBACK;
-    }
-  
     Dev::~Dev() {  
     }
+
+  
 
 
     class Dev::CPcapWrapper {
@@ -154,6 +142,29 @@ namespace Pcap {
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
 
     }
+  
+    bool DevLive::isUp() const{ 
+        return _flags & PCAP_IF_UP;
+    }
+
+    bool DevLive::isRunning() const{
+        return _flags & PCAP_IF_RUNNING;
+    }
+
+    bool DevLive::isLoopback() const{
+        return _flags & PCAP_IF_LOOPBACK;
+    }
+  
+    auto  DevLive::getStats () -> Stats{
+        struct pcap_stat _stat;
+        int err  = pcap_stats(_cwrapper->_handler,  &_stat);
+        if (err==-1) {
+            throw Error(pcap_geterr(_cwrapper->_handler));
+        }
+        
+        return Stats{_stat.ps_recv,_stat.ps_drop,_stat.ps_ifdrop};
+    }
+    
 
     struct PacketObserver: public AbstractObserver<Packet> {
         PacketObserver(Dumper&d):_dumper(d) {}
@@ -210,6 +221,7 @@ namespace Pcap {
     
        
     }
+
 
     std::shared_ptr<DevLive> openLive(string name) throw(Error) {
         auto devList = findAllDevs();
