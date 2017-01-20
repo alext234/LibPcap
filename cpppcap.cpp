@@ -142,6 +142,9 @@ namespace Pcap {
         pcap_loop(_cwrapper->_handler, 0, &Dev::CPcapWrapper::packet_handler, reinterpret_cast<u_char*>(this));
 
     }
+    auto Dev::getStats () -> Stats {
+        return {0,0,0};
+    }
   
     bool DevLive::isUp() const{ 
         return _flags & PCAP_IF_UP;
@@ -162,10 +165,21 @@ namespace Pcap {
             throw Error(pcap_geterr(_cwrapper->_handler));
         }
         
-        return Stats{_stat.ps_recv,_stat.ps_drop,_stat.ps_ifdrop};
+        return {_stat.ps_recv,_stat.ps_drop,_stat.ps_ifdrop};
     }
     
+    DevOffline::DevOffline(const std::string& name, const std::string& description) : Dev(name,description) {
+        registerObserver([this](const Packet& packet){
+            stats.recv+=1;
+        });
 
+    }
+    
+    
+    auto DevOffline::getStats () -> Stats {
+        return stats;
+    }
+    
     struct PacketObserver: public AbstractObserver<Packet> {
         PacketObserver(Dumper&d):_dumper(d) {}
         void onNotified(const Packet& packet) override {

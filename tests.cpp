@@ -155,6 +155,7 @@ TEST(CppPcap, openOfflinePcapFileLambda) {
     
     dev->loop();
     ASSERT_THAT (receivedCount, Gt(0));
+    ASSERT_THAT (uint32_t(receivedCount), Eq(dev->getStats().recv));
 
 }
 

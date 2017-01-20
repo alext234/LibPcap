@@ -70,6 +70,12 @@ namespace Pcap {
 
     class Dev: public Observable<Packet> {
     public:       
+        struct Stats{
+            uint32_t recv;
+            uint32_t drop;
+            uint32_t ifdrop; // dropped by interface or driver
+        };
+
         Dev(const std::string& name, const std::string& description="");
         virtual ~Dev() ;
 
@@ -79,7 +85,8 @@ namespace Pcap {
         Dev() = delete;
         Dev(const Dev&)=delete;
         Dev(Dev&& r);
-
+        virtual Stats getStats () ;
+        
         void breakLoop(void); 
         virtual void loop(void); // start the receive loop
         void loop(Dumper&);
@@ -93,7 +100,7 @@ namespace Pcap {
         
         class CPcapWrapper;
         std::unique_ptr<CPcapWrapper> _cwrapper; //  to store all stuff from orginal libpcap such as pcap_t handler 
-    
+        
         void notify (const Packet& packet);
         // 'friends'
         friend std::ostream& operator<<(std::ostream& os, const Dev& dev);        
@@ -106,8 +113,12 @@ namespace Pcap {
    
     // offline .pcap file
     class DevOffline: public Dev {
-    public:        
-        using Dev::Dev;
+    public:                
+        DevOffline(const std::string& name, const std::string& description="");
+        Stats getStats () override;
+        
+    private:
+        Stats stats{0,0,0};
     
         
     };
@@ -117,18 +128,13 @@ namespace Pcap {
     // a live interface
     class DevLive: public Dev {
     public:
-        struct Stats{
-            uint32_t recv; 
-            uint32_t drop;
-            uint32_t ifdrop; // dropped by interface or driver
-        };
     
         using Dev::Dev;                
         virtual void loop(void) override;
         bool isUp() const;
         bool isRunning() const;
         bool isLoopback()const ;
-        Stats getStats ();
+        Stats getStats () override;
         friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);        
 
     private:
