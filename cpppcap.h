@@ -112,14 +112,23 @@ namespace Pcap {
         
     };
     
+
+    
     // a live interface
     class DevLive: public Dev {
     public:
+        struct Stats{
+            uint32_t recv; 
+            uint32_t drop;
+            uint32_t ifdrop; // dropped by interface or driver
+        };
+    
         using Dev::Dev;                
         virtual void loop(void) override;
         bool isUp() const;
         bool isRunning() const;
         bool isLoopback()const ;
+        Stats getStats ();
         friend std::vector< std::shared_ptr<DevLive> > findAllDevs(void) throw(Error);        
 
     private:
